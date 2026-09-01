@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundamentos de la automatización de procesos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:            #1a1220;
+    --bg-panel:      #241723;
+    --card:          #2c1b26;
+    --line:          #4a3038;
+    --glow:          #f2b26b;
+    --glow-dim:      #c99a72;
+    --dusk:          #6b4a63;
+    --ember:         #d9724f;
+    --text:          #f7ece2;
+    --text-dim:      #b39a92;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3, .eyebrow-num{
+    font-family:'Space Grotesk', sans-serif;
+  }
+
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  a{ color:var(--glow); }
+
+  button{
+    font-family:inherit;
+    color:inherit;
+    background:none;
+    border:none;
+    cursor:pointer;
+  }
+
+  :focus-visible{
+    outline:2px solid var(--glow);
+    outline-offset:3px;
+    border-radius:2px;
+  }
+
+  .wrap{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 6vw;
+  }
+
+  @media(min-width:900px){
+    .wrap{ padding:0 64px; }
+  }
+
+  /* ================= SCROLL PROGRESS ================= */
+
+  .scroll-progress-track{
+    position:fixed;
+    top:0; left:0;
+    width:100%;
+    height:3px;
+    background:rgba(0,0,0,0.3);
+    z-index:50;
+  }
+
+  .scroll-progress{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--dusk), var(--ember), var(--glow));
+    box-shadow:0 0 10px rgba(242,178,107,0.65);
+    transition:width 0.08s linear;
+  }
+
+  /* ================= PORTADA ================= */
+
+  .portada{
+    position:relative;
+    min-height:78svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    overflow:hidden;
+    background:
+      radial-gradient(130% 85% at 80% 4%, rgba(242,178,107,0.22), transparent 55%),
+      radial-gradient(100% 70% at 50% 40%, rgba(217,114,79,0.14), transparent 60%),
+      radial-gradient(90% 60% at 15% 100%, rgba(107,74,99,0.30), transparent 60%),
+      var(--bg);
+  }
+
+  .portada::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:linear-gradient(180deg, transparent 0%, rgba(242,178,107,0.05) 48%, transparent 100%);
+    background-size:100% 260%;
+    opacity:0.9;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .portada::after{ animation:sweep 9s ease-in-out infinite; }
+  }
+
+  @keyframes sweep{
+    0%{ background-position:0 -60%; }
+    50%{ background-position:0 60%; }
+    100%{ background-position:0 -60%; }
+  }
+
+  .sunset-glow{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+    opacity:0.9;
+  }
+
+  .portada-top{
+    position:relative;
+    z-index:2;
+    padding-top:44px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px 20px;
+  }
+
+  .mark{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:0.8rem;
+    letter-spacing:0.02em;
+    color:var(--glow-dim);
+  }
+
+  .mark-dot{
+    width:9px; height:9px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--glow),var(--dusk));
+    flex-shrink:0;
+  }
+
+  .status-live{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+  }
+
+  .status-led{
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--glow);
+    box-shadow:0 0 6px 1px rgba(242,178,107,0.8);
+    flex-shrink:0;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .status-led{ animation:blink 2.4s ease-in-out infinite; }
+  }
+
+  @keyframes blink{
+    0%, 100%{ opacity:1; }
+    50%{ opacity:0.35; }
+  }
+
+  .portada-main{
+    position:relative;
+    z-index:2;
+    padding:48px 0 0;
+  }
+
+  .kicker{
+    font-size:0.85rem;
+    color:var(--ember);
+    font-weight:500;
+    margin-bottom:20px;
+    max-width:32ch;
+  }
+
+  h1.titulo{
+    font-size:clamp(2.1rem, 5.6vw, 3.9rem);
+    font-weight:600;
+    letter-spacing:-0.015em;
+    line-height:1.08;
+    max-width:16ch;
+    color:var(--text);
+  }
+
+  .titulo-regla{
+    width:64px;
+    height:3px;
+    margin:32px 0 30px;
+    background:linear-gradient(90deg, var(--dusk), var(--glow));
+  }
+
+  .lead{
+    max-width:56ch;
+    font-size:1.02rem;
+    color:var(--text-dim);
+  }
+
+  .hud-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:32px;
+  }
+
+  .hud-stat{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    background:rgba(36,23,35,0.55);
+    backdrop-filter:blur(2px);
+  }
+
+  .hud-stat-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.66rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+
+  .hud-stat-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    letter-spacing:0.03em;
+    color:var(--glow);
+  }
+
+  .portada-footer{
+    position:relative;
+    z-index:2;
+    padding-bottom:40px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    border-top:1px solid var(--line);
+    padding-top:24px;
+    margin-top:34px;
+  }
+
+  .scroll-hint{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    font-size:0.75rem;
+    color:var(--text-dim);
+    letter-spacing:0.04em;
+    text-decoration:none;
+    padding:10px 4px;
+    transition:color 0.2s ease, gap 0.2s ease;
+  }
+
+  .scroll-hint:hover, .scroll-hint:focus-visible{
+    color:var(--glow);
+    gap:14px;
+  }
+
+  .scroll-hint svg{ width:14px; height:14px; flex-shrink:0; }
+
+  /* ================= CONTENIDO ================= */
+
+  .seccion{
+    padding:76px 0;
+    border-top:1px solid var(--line);
+  }
+
+  .seccion.panel{ background:var(--bg-panel); }
+
+  .seccion-head{
+    max-width:62ch;
+    margin-bottom:40px;
+  }
+
+  .seccion-eyebrow{
+    font-size:0.78rem;
+    color:var(--ember);
+    letter-spacing:0.03em;
+    margin-bottom:14px;
+    font-weight:500;
+  }
+
+  .seccion-head h2{
+    font-size:clamp(1.5rem, 3.1vw, 2.1rem);
+    font-weight:600;
+    letter-spacing:-0.01em;
+    line-height:1.18;
+    color:var(--text);
+  }
+
+  .prosa{
+    max-width:70ch;
+    color:var(--text-dim);
+    font-size:1rem;
+  }
+
+  .prosa p + p{ margin-top:18px; }
+
+  .prosa strong{ color:var(--text); font-weight:500; }
+
+  /* ---------- grid de conceptos ---------- */
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+
+  @media(min-width:700px){
+    .grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  .card{
+    position:relative;
+    background:var(--card);
+    padding:30px 28px 26px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    transition:background 0.25s ease, transform 0.25s ease;
+  }
+
+  .card:hover, .card:focus-within{
+    background:#331f2c;
+    transform:translateY(-3px);
+  }
+
+  .card::before, .card::after{
+    content:"";
+    position:absolute;
+    width:16px; height:16px;
+    opacity:0;
+    transition:opacity 0.25s ease;
+    pointer-events:none;
+  }
+
+  .card::before{
+    top:10px; left:10px;
+    border-top:2px solid var(--ember);
+    border-left:2px solid var(--ember);
+  }
+
+  .card::after{
+    bottom:10px; right:10px;
+    border-bottom:2px solid var(--ember);
+    border-right:2px solid var(--ember);
+  }
+
+  .card:hover::before, .card:hover::after,
+  .card:focus-within::before, .card:focus-within::after{
+    opacity:1;
+  }
+
+  .card-top{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+  }
+
+  .icon-box{
+    width:48px;
+    height:48px;
+    flex-shrink:0;
+    border:1px solid var(--line);
+    border-radius:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(160deg, rgba(217,114,79,0.14), rgba(0,0,0,0));
+    transition:transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .card:hover .icon-box{
+    transform:rotate(-6deg);
+    border-color:var(--glow-dim);
+  }
+
+  .icon-box svg{
+    width:24px;
+    height:24px;
+    stroke:var(--glow);
+    fill:none;
+    stroke-width:1.5;
+  }
+
+  .card h3{
+    font-size:1.08rem;
+    font-weight:600;
+    color:var(--text);
+    letter-spacing:-0.005em;
+    padding-top:4px;
+  }
+
+  .card p{
+    font-size:0.9rem;
+    color:var(--text-dim);
+  }
+
+  /* ---------- comparativa dos columnas ---------- */
+
+  .comparativa{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+
+  @media(min-width:800px){
+    .comparativa{ grid-template-columns:1fr 1fr; }
+  }
+
+  .comp-col{
+    background:var(--card);
+    padding:32px 28px;
+  }
+
+  .comp-col h3{
+    font-size:1rem;
+    font-weight:600;
+    color:var(--glow);
+    margin-bottom:6px;
+  }
+
+  .comp-col p.sub{
+    font-size:0.85rem;
+    color:var(--text-dim);
+    margin-bottom:22px;
+    max-width:38ch;
+  }
+
+  .comp-col ul{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .comp-col li{
+    padding-left:18px;
+    position:relative;
+    font-size:0.92rem;
+    color:var(--text-dim);
+  }
+
+  .comp-col li::before{
+    content:"";
+    position:absolute;
+    left:0; top:8px;
+    width:6px; height:6px;
+    background:var(--ember);
+  }
+
+  .comp-col li strong{ color:var(--text); font-weight:500; }
+
+  /* ---------- lista de niveles / lazo ---------- */
+
+  .escalera{
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--line);
+  }
+
+  .escalera-item{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:20px;
+    padding:24px 26px;
+    background:var(--card);
+  }
+
+  .escalera-item + .escalera-item{ border-top:1px solid var(--line); }
+
+  .escalera-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--glow-dim);
+    padding-top:3px;
+  }
+
+  .escalera-item h3{
+    font-size:1rem;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:6px;
+  }
+
+  .escalera-item p{
+    font-size:0.9rem;
+    color:var(--text-dim);
+    max-width:60ch;
+  }
+
+  /* ---------- beneficios / retos ---------- */
+
+  .dos-columnas{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:34px;
+  }
+
+  @media(min-width:800px){
+    .dos-columnas{ grid-template-columns:1fr 1fr; }
+  }
+
+  .lista-simple{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .lista-simple li{
+    padding-left:20px;
+    position:relative;
+    font-size:0.95rem;
+    color:var(--text-dim);
+  }
+
+  .lista-simple li::before{
+    content:"";
+    position:absolute;
+    left:0; top:9px;
+    width:7px; height:7px;
+    border-radius:50%;
+  }
+
+  .lista-simple.beneficios li::before{ background:var(--glow); }
+  .lista-simple.retos li::before{ background:var(--ember); }
+
+  .lista-simple li strong{ color:var(--text); font-weight:500; }
+
+  .subtitulo-col{
+    font-size:0.78rem;
+    letter-spacing:0.03em;
+    color:var(--ember);
+    margin-bottom:18px;
+    font-weight:500;
+  }
+
+  footer.pie{
+    padding:34px 0;
+    text-align:center;
+    font-size:0.78rem;
+    color:var(--text-dim);
+    background:var(--bg-panel);
+    border-top:1px solid var(--line);
+  }
+
+  @media(max-width:480px){
+    .card{ padding:24px 20px 22px; }
+    .comp-col{ padding:26px 22px; }
+    .escalera-item{ grid-template-columns:1fr; gap:6px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="scroll-progress-track"><div class="scroll-progress" id="scrollProgress"></div></div>
+
+<!-- ================= PORTADA ================= -->
+<header class="portada">
+
+  <svg class="sunset-glow" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f2b26b" stop-opacity="0.9"/>
+        <stop offset="55%" stop-color="#d9724f" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#d9724f" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f2b26b" stop-opacity="0.30"/>
+        <stop offset="100%" stop-color="#6b4a63" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <circle cx="880" cy="200" r="200" fill="url(#sunGrad)"/>
+    <circle cx="880" cy="200" r="50" fill="#f2b26b" opacity="0.55"/>
+
+    <line x1="-50" y1="400" x2="1260" y2="400" stroke="#d9724f" stroke-opacity="0.25" stroke-width="1"/>
+
+    <rect x="0" y="400" width="1200" height="400" fill="url(#waterGrad)"/>
+    <path d="M 780 440 Q 880 450 980 440" stroke="#f2b26b" stroke-opacity="0.5" stroke-width="2" fill="none"/>
+    <path d="M 800 480 Q 880 492 960 480" stroke="#f2b26b" stroke-opacity="0.4" stroke-width="2" fill="none"/>
+    <path d="M 760 525 Q 880 540 1000 525" stroke="#f2b26b" stroke-opacity="0.32" stroke-width="2" fill="none"/>
+
+    <path d="M -50 400 C 120 385, 260 395, 420 400 C 560 404, 640 390, 780 400 L 780 430 L -50 430 Z" fill="#1a1220" opacity="0.55"/>
+  </svg>
+
+  <div class="wrap portada-top">
+    <div class="mark"><span class="mark-dot"></span>CBTIS 144 — Especialidad de IA</div>
+    <div class="mark status-live"><span class="status-led"></span>SISTEMA EN LÍNEA</div>
+  </div>
+
+  <div class="wrap portada-main">
+    <p class="kicker">Introducción teórica</p>
+    <h1 class="titulo">Fundamentos de la automatización de procesos</h1>
+    <div class="titulo-regla"></div>
+    <p class="lead">Un recorrido por los conceptos que sostienen cualquier sistema automatizado, ya sea una línea de producción, una planta de servicios o un flujo administrativo: qué se automatiza, con qué piezas se construye y por qué importa.</p>
+
+    <div class="hud-stats">
+      <div class="hud-stat"><span class="hud-stat-label">Conceptos</span><span class="hud-stat-value">06</span></div>
+      <div class="hud-stat"><span class="hud-stat-label">Alcance</span><span class="hud-stat-value">Industrial y servicios</span></div>
+      <div class="hud-stat"><span class="hud-stat-label">Nivel</span><span class="hud-stat-value">Introductorio</span></div>
+    </div>
+  </div>
+
+  <div class="wrap portada-footer">
+    <a href="#introduccion" class="scroll-hint">
+      Comenzar la lectura
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2" fill="none">
+        <path d="M12 4v16M6 14l6 6 6-6"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<!-- ================= INTRODUCCIÓN ================= -->
+<main>
+<section class="seccion" id="introduccion">
+  <div class="wrap">
+    <div class="seccion-head">
+      <p class="seccion-eyebrow">01 — Panorama general</p>
+      <h2>Qué es la automatización de procesos</h2>
+    </div>
+    <div class="prosa">
+      <p>La automatización de procesos consiste en delegar tareas que antes requerían intervención humana directa a un sistema técnico —mecánico, electrónico o informático— capaz de ejecutarlas de forma repetida, con precisión y sin supervisión constante. No se trata únicamente de sustituir manos por máquinas: se trata de diseñar un sistema que <strong>perciba</strong> el estado de un proceso, <strong>decida</strong> qué acción tomar según reglas establecidas, y <strong>actúe</strong> sobre el entorno para mantener ese proceso dentro de los parámetros deseados.</p>
+      <p>Esta lógica aplica tanto a una fábrica como a una oficina. Una línea de ensamblaje que ajusta la velocidad de una banda según el peso detectado en cada pieza, y un sistema que clasifica automáticamente los correos de soporte según su urgencia, resuelven el mismo problema esencial: reducir la variabilidad humana en tareas repetitivas para ganar consistencia, velocidad y capacidad de escalar.</p>
+      <p>Por eso conviene distinguir dos grandes ramas. La <strong>automatización industrial</strong> actúa sobre procesos físicos —temperatura, presión, movimiento, ensamblaje— mediante sensores, actuadores y controladores. La <strong>automatización de servicios</strong> actúa sobre procesos administrativos y digitales —trámites, atención al cliente, flujos de información— mediante software, reglas de negocio y, cada vez más, inteligencia artificial. Ambas comparten la misma estructura de fondo: un ciclo de medición, decisión y acción que se repite sin depender de que una persona lo accione cada vez.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONCEPTOS CLAVE ================= -->
+<section class="seccion panel">
+  <div class="wrap">
+    <div class="seccion-head">
+      <p class="seccion-eyebrow">02 — Vocabulario base</p>
+      <h2>Conceptos clave que sostienen cualquier sistema automatizado</h2>
+    </div>
+
+    <div class="grid">
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="8"/>
+              <path stroke-linecap="round" d="M24 8v6M24 34v6M40 24h-6M14 24H8"/>
+            </svg>
+          </div>
+          <h3>Sensores</h3>
+        </div>
+        <p>Dispositivos que miden una variable física o digital del proceso —temperatura, distancia, presencia, volumen de solicitudes— y la traducen en una señal que el sistema puede interpretar.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 40h10M14 40V27l10-6M24 21l8-9"/>
+              <circle cx="14" cy="24" r="3"/>
+              <circle cx="33" cy="10" r="3"/>
+            </svg>
+          </div>
+          <h3>Actuadores</h3>
+        </div>
+        <p>La contraparte de los sensores: convierten una decisión en movimiento o acción real, como abrir una válvula, mover un brazo robótico o disparar una notificación automática.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <rect x="14" y="14" width="20" height="20" rx="1.5"/>
+              <path stroke-linecap="round" d="M24 6v8M24 34v8M6 24h8M34 24h8"/>
+            </svg>
+          </div>
+          <h3>Controlador</h3>
+        </div>
+        <p>El elemento que compara lo que el sensor midió contra lo que se espera, y calcula qué debe hacer el actuador. Puede ser un PLC en una planta o un motor de reglas en un software.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 24a14 14 0 0 1 24-9.9M38 24a14 14 0 0 1-24 9.9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M34 10v5h-5M14 38v-5h5"/>
+            </svg>
+          </div>
+          <h3>Lazo de control</h3>
+        </div>
+        <p>El ciclo continuo de medir, decidir y actuar. Un lazo cerrado usa la retroalimentación del propio resultado para autocorregirse; uno abierto ejecuta la acción sin verificar el resultado.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="10" width="36" height="22" rx="1.5"/>
+              <path stroke-linecap="round" d="M16 38h16M24 32v6"/>
+            </svg>
+          </div>
+          <h3>SCADA y HMI</h3>
+        </div>
+        <p>Sistemas de supervisión que permiten a una persona observar y ajustar el proceso desde una pantalla, sin operar cada elemento de forma manual. Son la ventana humana hacia el sistema automatizado.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <div class="icon-box">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="10" r="3.4"/>
+              <circle cx="10" cy="34" r="3.4"/>
+              <circle cx="38" cy="34" r="3.4"/>
+              <path stroke-linecap="round" d="M24 13.4V22.6M21.2 27.9L12.8 32M26.8 27.9l8.4 4.1"/>
+            </svg>
+          </div>
+          <h3>RPA</h3>
+        </div>
+        <p>Automatización robótica de procesos: software que imita las acciones de una persona en sistemas digitales —llenar formularios, mover datos entre plataformas— sin necesidad de hardware físico.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= INDUSTRIAL VS SERVICIOS ================= -->
+<section class="seccion">
+  <div class="wrap">
+    <div class="seccion-head">
+      <p class="seccion-eyebrow">03 — Dos terrenos, una misma lógica</p>
+      <h2>Automatización industrial frente a automatización de servicios</h2>
+    </div>
+
+    <div class="comparativa">
+      <div class="comp-col">
+        <h3>Industrial</h3>
+        <p class="sub">Actúa sobre el mundo físico: materiales, energía y movimiento.</p>
+        <ul>
+          <li><strong>Objeto que controla:</strong> variables físicas medibles como temperatura, presión o posición.</li>
+          <li><strong>Herramientas típicas:</strong> PLC, sensores industriales, motores, brazos robóticos, bandas transportadoras.</li>
+          <li><strong>Riesgo si falla:</strong> daño material, paros de producción o riesgos de seguridad física.</li>
+          <li><strong>Ejemplo:</strong> una línea de embotellado que ajusta el llenado según el peso detectado en cada envase.</li>
+        </ul>
+      </div>
+      <div class="comp-col">
+        <h3>De servicios</h3>
+        <p class="sub">Actúa sobre información: datos, documentos y decisiones administrativas.</p>
+        <ul>
+          <li><strong>Objeto que controla:</strong> flujos de datos, solicitudes, documentos o interacciones con clientes.</li>
+          <li><strong>Herramientas típicas:</strong> RPA, chatbots, sistemas de gestión (ERP/CRM), reglas de negocio automatizadas.</li>
+          <li><strong>Riesgo si falla:</strong> errores administrativos, retrasos en la atención o pérdida de información.</li>
+          <li><strong>Ejemplo:</strong> un sistema que clasifica y responde automáticamente los tickets de soporte según su tema.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NIVELES ================= -->
+<section class="seccion panel">
+  <div class="wrap">
+    <div class="seccion-head">
+      <p class="seccion-eyebrow">04 — Grados de automatización</p>
+      <h2>Tres niveles según cuánto puede adaptarse el sistema</h2>
+    </div>
+
+    <div class="escalera">
+      <div class="escalera-item">
+        <span class="escalera-num">Nivel 1</span>
+        <div>
+          <h3>Automatización fija</h3>
+          <p>El sistema ejecuta siempre la misma secuencia de operaciones, sobre el mismo producto o tarea. Es eficiente y económica cuando el volumen es alto y el proceso no cambia, pero rígida ante cualquier variación.</p>
+        </div>
+      </div>
+      <div class="escalera-item">
+        <span class="escalera-num">Nivel 2</span>
+        <div>
+          <h3>Automatización programable</h3>
+          <p>El sistema puede reconfigurarse mediante software o programación para atender distintos productos o tareas, aunque el cambio de una configuración a otra requiere tiempo de ajuste.</p>
+        </div>
+      </div>
+      <div class="escalera-item">
+        <span class="escalera-num">Nivel 3</span>
+        <div>
+          <h3>Automatización flexible</h3>
+          <p>El sistema se adapta en tiempo real a distintas condiciones sin detenerse, apoyado en sensores, software de control avanzado y, cada vez más, en algoritmos de inteligencia artificial.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BENEFICIOS Y RETOS ================= -->
+<section class="seccion">
+  <div class="wrap">
+    <div class="seccion-head">
+      <p class="seccion-eyebrow">05 — Balance</p>
+      <h2>Por qué se automatiza, y qué exige hacerlo bien</h2>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <p class="subtitulo-col">Beneficios</p>
+        <ul class="lista-simple beneficios">
+          <li><strong>Consistencia:</strong> el resultado no depende del cansancio o el estado de ánimo de una persona.</li>
+          <li><strong>Productividad:</strong> los procesos pueden operar de forma continua y a mayor velocidad.</li>
+          <li><strong>Trazabilidad:</strong> los sistemas automatizados generan datos que facilitan auditar y mejorar el proceso.</li>
+          <li><strong>Seguridad:</strong> se reduce la exposición humana a tareas peligrosas o repetitivas.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="subtitulo-col">Retos</p>
+        <ul class="lista-simple retos">
+          <li><strong>Inversión inicial:</strong> el diseño e implementación del sistema suele tener un costo elevado.</li>
+          <li><strong>Capacitación:</strong> el personal necesita formarse para operar y mantener el nuevo sistema.</li>
+          <li><strong>Ciberseguridad:</strong> más conexión digital implica más superficie para posibles ataques o fallos.</li>
+          <li><strong>Rigidez inicial:</strong> un sistema mal diseñado puede ser difícil de adaptar a cambios futuros.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="pie">
+  David Yael Gutiérrez Moguel · Especialidad de IA · CBTIS 144
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var bar = document.getElementById('scrollProgress');
+    function onScroll() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - doc.clientHeight;
+      var pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  });
+</script>
+
+</body>
+</html>
