@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatización de procesos industriales y de servicios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:            #1a1220;
+    --bg-panel:      #241723;
+    --card:          #2c1b26;
+    --line:          #4a3038;
+    --glow:          #f2b26b;
+    --glow-dim:      #c99a72;
+    --dusk:          #6b4a63;
+    --ember:         #d9724f;
+    --text:          #f7ece2;
+    --text-dim:      #b39a92;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3, .eyebrow-num{
+    font-family:'Space Grotesk', sans-serif;
+  }
+
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  a{ color:inherit; }
+
+  button{
+    font-family:inherit;
+    color:inherit;
+    background:none;
+    border:none;
+    cursor:pointer;
+  }
+
+  :focus-visible{
+    outline:2px solid var(--glow);
+    outline-offset:3px;
+    border-radius:2px;
+  }
+
+  /* ---------- helpers ---------- */
+  .wrap{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 6vw;
+  }
+
+  @media(min-width:900px){
+    .wrap{ padding:0 64px; }
+  }
+
+  /* ================= SCROLL PROGRESS (system charge bar) ================= */
+
+  .scroll-progress-track{
+    position:fixed;
+    top:0; left:0;
+    width:100%;
+    height:3px;
+    background:rgba(0,0,0,0.3);
+    z-index:50;
+  }
+
+  .scroll-progress{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--dusk), var(--ember), var(--glow));
+    box-shadow:0 0 10px rgba(242,178,107,0.65);
+    transition:width 0.08s linear;
+  }
+
+  /* ================= PORTADA ================= */
+
+  .portada{
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    overflow:hidden;
+    background:
+      radial-gradient(130% 85% at 80% 4%, rgba(242,178,107,0.22), transparent 55%),
+      radial-gradient(100% 70% at 50% 40%, rgba(217,114,79,0.14), transparent 60%),
+      radial-gradient(90% 60% at 15% 100%, rgba(107,74,99,0.30), transparent 60%),
+      var(--bg);
+  }
+
+  /* scanline sweep - single ambient motion cue, screen/HUD feel */
+  .portada::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:linear-gradient(180deg, transparent 0%, rgba(242,178,107,0.05) 48%, transparent 100%);
+    background-size:100% 260%;
+    opacity:0.9;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .portada::after{
+      animation:sweep 9s ease-in-out infinite;
+    }
+  }
+
+  @keyframes sweep{
+    0%{ background-position:0 -60%; }
+    50%{ background-position:0 60%; }
+    100%{ background-position:0 -60%; }
+  }
+
+  .sunset-glow{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+    opacity:0.9;
+  }
+
+  .portada-top{
+    position:relative;
+    z-index:2;
+    padding-top:48px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px 20px;
+  }
+
+  .mark{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:0.8rem;
+    letter-spacing:0.02em;
+    color:var(--glow-dim);
+  }
+
+  .mark-dot{
+    width:9px; height:9px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--glow),var(--dusk));
+    flex-shrink:0;
+  }
+
+  .status-live{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+  }
+
+  .status-led{
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--glow);
+    box-shadow:0 0 6px 1px rgba(242,178,107,0.8);
+    flex-shrink:0;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .status-led{ animation:blink 2.4s ease-in-out infinite; }
+  }
+
+  @keyframes blink{
+    0%, 100%{ opacity:1; }
+    50%{ opacity:0.35; }
+  }
+
+  .portada-main{
+    position:relative;
+    z-index:2;
+    padding:56px 0 0;
+  }
+
+  .kicker{
+    font-size:0.85rem;
+    color:var(--ember);
+    font-weight:500;
+    margin-bottom:22px;
+    max-width:32ch;
+  }
+
+  h1.titulo{
+    font-size:clamp(2.3rem, 6.2vw, 4.6rem);
+    font-weight:600;
+    letter-spacing:-0.015em;
+    line-height:1.04;
+    max-width:14ch;
+    color:var(--text);
+  }
+
+  h1.titulo em{
+    font-style:normal;
+    color:var(--glow);
+  }
+
+  .titulo-regla{
+    width:64px;
+    height:3px;
+    margin:34px 0 36px;
+    background:linear-gradient(90deg, var(--dusk), var(--glow));
+  }
+
+  /* HUD stat readout - grounded in the subject: automation dashboards read like this */
+  .hud-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .hud-stat{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    background:rgba(36,23,35,0.55);
+    backdrop-filter:blur(2px);
+  }
+
+  .hud-stat-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.66rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+
+  .hud-stat-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    letter-spacing:0.03em;
+    color:var(--glow);
+  }
+
+  .portada-footer{
+    position:relative;
+    z-index:2;
+    padding-bottom:44px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    border-top:1px solid var(--line);
+    padding-top:26px;
+    margin-top:34px;
+  }
+
+  .portada-footer-row{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+
+  .autor-label{
+    font-size:0.72rem;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.09em;
+  }
+
+  .autor-nombre{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.15rem;
+    font-weight:600;
+    color:var(--text);
+  }
+
+  .autor-detalle{
+    font-size:0.9rem;
+    color:var(--glow-dim);
+  }
+
+  .scroll-hint{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    font-size:0.75rem;
+    color:var(--text-dim);
+    letter-spacing:0.04em;
+    text-decoration:none;
+    padding:10px 4px;
+    transition:color 0.2s ease, gap 0.2s ease;
+  }
+
+  .scroll-hint:hover, .scroll-hint:focus-visible{
+    color:var(--glow);
+    gap:14px;
+  }
+
+  .scroll-hint svg{ width:14px; height:14px; flex-shrink:0; }
+
+  @media(min-width:900px){
+    .portada-footer{ flex-direction:row; align-items:center; justify-content:space-between; }
+  }
+
+  /* ================= PANEL DE CONTROL ================= */
+
+  .catalogo{
+    background:var(--bg-panel);
+    padding:76px 0 100px;
+    border-top:1px solid var(--line);
+  }
+
+  .catalogo-head{
+    max-width:52ch;
+    margin-bottom:44px;
+  }
+
+  .catalogo-eyebrow{
+    font-size:0.78rem;
+    color:var(--ember);
+    letter-spacing:0.03em;
+    margin-bottom:14px;
+    font-weight:500;
+  }
+
+  .catalogo-head h2{
+    font-size:clamp(1.6rem, 3.4vw, 2.3rem);
+    font-weight:600;
+    letter-spacing:-0.01em;
+    line-height:1.15;
+    color:var(--text);
+    margin-bottom:14px;
+  }
+
+  .catalogo-head p{
+    color:var(--text-dim);
+    font-size:0.98rem;
+    max-width:44ch;
+  }
+
+  /* global module-activation readout, ties the game mechanic to real content state */
+  .progreso-global{
+    margin-top:30px;
+    max-width:360px;
+  }
+
+  .progreso-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.05em;
+    color:var(--glow-dim);
+    margin-bottom:8px;
+  }
+
+  .progreso-track{
+    height:6px;
+    background:var(--card);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+
+  .progreso-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--dusk), var(--ember), var(--glow));
+    box-shadow:0 0 8px rgba(242,178,107,0.5);
+    transition:width 0.45s cubic-bezier(.4,0,.2,1);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+
+  @media(min-width:700px){
+    .grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  .card{
+    position:relative;
+    background:var(--card);
+    padding:34px 30px 30px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+    min-height:260px;
+    transition:background 0.25s ease, transform 0.25s ease;
+  }
+
+  .card:hover, .card:focus-within{
+    background:#331f2c;
+    transform:translateY(-3px);
+  }
+
+  /* signature motif: targeting-reticle corners, echoing automation vision systems.
+     hidden by default, revealed on hover/focus/active — one device, reused everywhere */
+  .card::before, .card::after{
+    content:"";
+    position:absolute;
+    width:18px; height:18px;
+    opacity:0;
+    transition:opacity 0.25s ease;
+    pointer-events:none;
+  }
+
+  .card::before{
+    top:10px; left:10px;
+    border-top:2px solid var(--ember);
+    border-left:2px solid var(--ember);
+  }
+
+  .card::after{
+    bottom:10px; right:10px;
+    border-bottom:2px solid var(--ember);
+    border-right:2px solid var(--ember);
+  }
+
+  .card:hover::before, .card:hover::after,
+  .card:focus-within::before, .card:focus-within::after,
+  .card.activo::before, .card.activo::after{
+    opacity:1;
+  }
+
+  .card.activo{
+    box-shadow:inset 0 0 0 1px rgba(242,178,107,0.35);
+  }
+
+  .card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+  }
+
+  .eyebrow-num{
+    font-size:0.78rem;
+    color:var(--text-dim);
+    letter-spacing:0.04em;
+  }
+
+  .card-top-right{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .icon-box{
+    width:56px;
+    height:56px;
+    flex-shrink:0;
+    border:1px solid var(--line);
+    border-radius:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(160deg, rgba(217,114,79,0.14), rgba(0,0,0,0));
+    transition:transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .card:hover .icon-box{
+    transform:rotate(-6deg);
+    border-color:var(--glow-dim);
+  }
+
+  .icon-box svg{
+    width:28px;
+    height:28px;
+    stroke:var(--glow);
+    fill:none;
+    stroke-width:1.4;
+  }
+
+  /* toggle switch — "arm" a module, generous hit area for touch */
+  .toggle-switch{
+    display:flex;
+    align-items:center;
+    padding:8px;
+    margin:-8px;
+  }
+
+  .toggle-track{
+    width:38px;
+    height:20px;
+    border-radius:20px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    position:relative;
+    transition:background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .toggle-knob{
+    position:absolute;
+    top:2px; left:2px;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--text-dim);
+    transition:transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .toggle-switch[aria-pressed="true"] .toggle-track{
+    background:rgba(217,114,79,0.18);
+    border-color:var(--ember);
+  }
+
+  .toggle-switch[aria-pressed="true"] .toggle-knob{
+    transform:translateX(18px);
+    background:var(--glow);
+    box-shadow:0 0 8px rgba(242,178,107,0.75);
+  }
+
+  .card h3{
+    font-size:1.2rem;
+    font-weight:600;
+    color:var(--text);
+    letter-spacing:-0.005em;
+  }
+
+  .card p.tag{
+    font-size:0.88rem;
+    color:var(--text-dim);
+    max-width:34ch;
+  }
+
+  .card-foot{
+    margin-top:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .status-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.68rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    padding:5px 10px;
+    transition:color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  }
+
+  .card.activo .status-pill{
+    color:var(--bg);
+    background:var(--glow);
+    border-color:var(--glow);
+  }
+
+  .detalles-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:0.75rem;
+    color:var(--glow-dim);
+    padding:6px 4px;
+  }
+
+  .detalles-btn:hover, .detalles-btn:focus-visible{
+    color:var(--glow);
+  }
+
+  .chev{
+    display:inline-block;
+    transition:transform 0.3s ease;
+  }
+
+  .card.abierto .chev{
+    transform:rotate(180deg);
+  }
+
+  .detalles-panel{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:max-height 0.35s ease, opacity 0.3s ease, margin 0.35s ease;
+    font-size:0.86rem;
+    color:var(--text-dim);
+    border-top:1px solid transparent;
+  }
+
+  .card.abierto .detalles-panel{
+    max-height:160px;
+    opacity:1;
+    margin-top:2px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+
+  footer.pie{
+    padding:34px 0;
+    text-align:center;
+    font-size:0.78rem;
+    color:var(--text-dim);
+    background:var(--bg-panel);
+  }
+
+  /* ---------- mobile tuning ---------- */
+  @media(max-width:480px){
+    .hud-stats{ gap:8px; }
+    .hud-stat{ padding:7px 11px; }
+    .card{ padding:28px 22px 24px; }
+    .card-foot{ flex-wrap:wrap; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="scroll-progress-track"><div class="scroll-progress" id="scrollProgress"></div></div>
+
+<!-- ================= PORTADA ================= -->
+<header class="portada">
+
+  <svg class="sunset-glow" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f2b26b" stop-opacity="0.9"/>
+        <stop offset="55%" stop-color="#d9724f" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#d9724f" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f2b26b" stop-opacity="0.30"/>
+        <stop offset="100%" stop-color="#6b4a63" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <circle cx="880" cy="230" r="230" fill="url(#sunGrad)"/>
+    <circle cx="880" cy="230" r="58" fill="#f2b26b" opacity="0.55"/>
+
+    <line x1="-50" y1="430" x2="1260" y2="430" stroke="#d9724f" stroke-opacity="0.25" stroke-width="1"/>
+
+    <rect x="0" y="430" width="1200" height="370" fill="url(#waterGrad)"/>
+    <path d="M 780 470 Q 880 480 980 470" stroke="#f2b26b" stroke-opacity="0.5" stroke-width="2" fill="none"/>
+    <path d="M 800 510 Q 880 522 960 510" stroke="#f2b26b" stroke-opacity="0.4" stroke-width="2" fill="none"/>
+    <path d="M 760 555 Q 880 570 1000 555" stroke="#f2b26b" stroke-opacity="0.32" stroke-width="2" fill="none"/>
+    <path d="M 730 610 Q 880 628 1030 610" stroke="#d9724f" stroke-opacity="0.24" stroke-width="2" fill="none"/>
+    <path d="M 690 675 Q 880 696 1070 675" stroke="#d9724f" stroke-opacity="0.16" stroke-width="2" fill="none"/>
+
+    <path d="M -50 430 C 120 415, 260 425, 420 430 C 560 434, 640 420, 780 430 L 780 460 L -50 460 Z" fill="#1a1220" opacity="0.55"/>
+  </svg>
+
+  <div class="wrap portada-top">
+    <div class="mark"><span class="mark-dot"></span>CBTIS 144 — Especialidad de IA</div>
+    <div class="mark status-live"><span class="status-led"></span>SISTEMA EN LÍNEA</div>
+  </div>
+
+  <div class="wrap portada-main">
+    <p class="kicker">Trabajo académico</p>
+    <h1 class="titulo">Automatización de procesos <em>industriales</em> y de servicios</h1>
+    <div class="titulo-regla"></div>
+
+    <div class="hud-stats">
+      <div class="hud-stat"><span class="hud-stat-label">Módulos</span><span class="hud-stat-value">04</span></div>
+      <div class="hud-stat"><span class="hud-stat-label">Estado</span><span class="hud-stat-value">En desarrollo</span></div>
+      <div class="hud-stat"><span class="hud-stat-label">Ciclo</span><span class="hud-stat-value">2025 – 2026</span></div>
+    </div>
+  </div>
+
+  <div class="wrap portada-footer">
+    <div class="portada-footer-row">
+      <p class="autor-label">Elaborado por</p>
+      <p class="autor-nombre">David Yael Gutiérrez Moguel</p>
+      <p class="autor-detalle">Especialidad de Inteligencia Artificial · CBTIS 144</p>
+    </div>
+
+    <a href="#panel" class="scroll-hint">
+      Ver panel de control
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2" fill="none">
+        <path d="M12 4v16M6 14l6 6 6-6"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<!-- ================= PANEL DE CONTROL ================= -->
+<main class="catalogo" id="panel">
+  <div class="wrap">
+
+    <div class="catalogo-head">
+      <p class="catalogo-eyebrow">Panel de control</p>
+      <h2>Cuatro módulos del sistema, en espera de asignación</h2>
+      <p>Los temas específicos aún están por definirse. Activa un módulo para marcarlo como asignado, o despliega sus detalles para ver qué documentará cada espacio.</p>
+
+      <div class="progreso-global">
+        <p class="progreso-label" id="progresoTexto">0 / 4 módulos activados</p>
+        <div class="progreso-track"><div class="progreso-fill" id="progresoFill"></div></div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid">
+
+      <!-- Módulo 1 - proceso mecanico / engrane -->
+      <article class="card">
+        <div class="card-top">
+          <span class="eyebrow-num">Módulo 01</span>
+          <div class="card-top-right">
+            <div class="icon-box">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M24 6v5M24 37v5M42 24h-5M11 24H6M35.6 12.4l-3.5 3.5M15.9 32.1l-3.5 3.5M35.6 35.6l-3.5-3.5M15.9 15.9l-3.5-3.5"/>
+                <circle cx="24" cy="24" r="9"/>
+                <circle cx="24" cy="24" r="3.2"/>
+              </svg>
+            </div>
+            <button class="toggle-switch" type="button" aria-pressed="false" aria-label="Activar módulo 01">
+              <span class="toggle-track"><span class="toggle-knob"></span></span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3>Por definir</h3>
+          <p class="tag">Espacio reservado para un proceso mecánico o de manufactura.</p>
+        </div>
+        <div class="card-foot">
+          <span class="status-pill">Pendiente</span>
+          <button class="detalles-btn" type="button" aria-expanded="false">Detalles <span class="chev">⌄</span></button>
+        </div>
+        <div class="detalles-panel">Aquí se documentará el proceso, la maquinaria involucrada y el objetivo de automatización de este módulo, una vez asignado.</div>
+      </article>
+
+      <!-- Módulo 2 - control / circuito -->
+      <article class="card">
+        <div class="card-top">
+          <span class="eyebrow-num">Módulo 02</span>
+          <div class="card-top-right">
+            <div class="icon-box">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <rect x="17" y="17" width="14" height="14" rx="1.5"/>
+                <path stroke-linecap="round" d="M24 6v9M24 33v9M6 24h9M33 24h9M11 11l6.5 6.5M30.5 30.5L37 37M37 11l-6.5 6.5M17.5 30.5L11 37"/>
+              </svg>
+            </div>
+            <button class="toggle-switch" type="button" aria-pressed="false" aria-label="Activar módulo 02">
+              <span class="toggle-track"><span class="toggle-knob"></span></span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3>Por definir</h3>
+          <p class="tag">Espacio reservado para un sistema de control o instrumentación.</p>
+        </div>
+        <div class="card-foot">
+          <span class="status-pill">Pendiente</span>
+          <button class="detalles-btn" type="button" aria-expanded="false">Detalles <span class="chev">⌄</span></button>
+        </div>
+        <div class="detalles-panel">Aquí se documentará el esquema de control, los sensores o actuadores y la lógica del sistema, una vez asignado.</div>
+      </article>
+
+      <!-- Módulo 3 - brazo robotico -->
+      <article class="card">
+        <div class="card-top">
+          <span class="eyebrow-num">Módulo 03</span>
+          <div class="card-top-right">
+            <div class="icon-box">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 40h10M14 40V27l10-6"/>
+                <circle cx="14" cy="24" r="3"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M24 21l8-9"/>
+                <circle cx="33" cy="10" r="3"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M33 13v6l6 4"/>
+              </svg>
+            </div>
+            <button class="toggle-switch" type="button" aria-pressed="false" aria-label="Activar módulo 03">
+              <span class="toggle-track"><span class="toggle-knob"></span></span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3>Por definir</h3>
+          <p class="tag">Espacio reservado para un caso de automatización robótica.</p>
+        </div>
+        <div class="card-foot">
+          <span class="status-pill">Pendiente</span>
+          <button class="detalles-btn" type="button" aria-expanded="false">Detalles <span class="chev">⌄</span></button>
+        </div>
+        <div class="detalles-panel">Aquí se documentará el brazo o mecanismo robótico, sus grados de libertad y la tarea que automatiza, una vez asignado.</div>
+      </article>
+
+      <!-- Módulo 4 - red / servicios -->
+      <article class="card">
+        <div class="card-top">
+          <span class="eyebrow-num">Módulo 04</span>
+          <div class="card-top-right">
+            <div class="icon-box">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="10" r="3.4"/>
+                <circle cx="10" cy="34" r="3.4"/>
+                <circle cx="38" cy="34" r="3.4"/>
+                <circle cx="24" cy="26" r="3.4"/>
+                <path stroke-linecap="round" d="M24 13.4V22.6M21.2 27.9L12.8 32M26.8 27.9l8.4 4.1"/>
+              </svg>
+            </div>
+            <button class="toggle-switch" type="button" aria-pressed="false" aria-label="Activar módulo 04">
+              <span class="toggle-track"><span class="toggle-knob"></span></span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3>Por definir</h3>
+          <p class="tag">Espacio reservado para un proceso de automatización de servicios.</p>
+        </div>
+        <div class="card-foot">
+          <span class="status-pill">Pendiente</span>
+          <button class="detalles-btn" type="button" aria-expanded="false">Detalles <span class="chev">⌄</span></button>
+        </div>
+        <div class="detalles-panel">Aquí se documentará el servicio a automatizar, las herramientas digitales usadas y el flujo del proceso, una vez asignado.</div>
+      </article>
+
+    </div>
+  </div>
+</main>
+
+<footer class="pie">
+  David Yael Gutiérrez Moguel · Especialidad de IA · CBTIS 144
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var grid = document.getElementById('grid');
+    var cards = grid.querySelectorAll('.card');
+    var total = cards.length;
+    var progresoTexto = document.getElementById('progresoTexto');
+    var progresoFill = document.getElementById('progresoFill');
+
+    function actualizarProgreso() {
+      var activos = grid.querySelectorAll('.card.activo').length;
+      progresoTexto.textContent = activos + ' / ' + total + ' módulos activados';
+      progresoFill.style.width = (activos / total * 100) + '%';
+    }
+
+    grid.querySelectorAll('.toggle-switch').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = btn.closest('.card');
+        var activo = card.classList.toggle('activo');
+        btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+        card.querySelector('.status-pill').textContent = activo ? '★ Activo' : 'Pendiente';
+        actualizarProgreso();
+      });
+    });
+
+    grid.querySelectorAll('.detalles-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = btn.closest('.card');
+        var abierto = card.classList.toggle('abierto');
+        btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+      });
+    });
+
+    actualizarProgreso();
+
+    var bar = document.getElementById('scrollProgress');
+    function onScroll() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - doc.clientHeight;
+      var pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  });
+</script>
+
+</body>
+</html>
